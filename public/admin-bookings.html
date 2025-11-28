@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Bookings - CampusStay</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <nav class="navbar admin-nav">
+    <div class="nav-container">
+        <div class="logo">
+            <i class="fas fa-store"></i>
+            <span>Bunda One Stop</span>
+        </div>
+      <div class="admin-links">
+        <a href="admin-bookings.html" class="active"><i class="fas fa-clipboard-list"></i> Bookings</a>
+        <a href="index.html"><i class="fas fa-arrow-left"></i> Back to Site</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="admin-container">
+    <h2><i class="fas fa-clipboard-list"></i> Student Bookings</h2>
+    <div class="bookings-table">
+      <table id="bookingsTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Student Name</th>
+            <th>Contact</th>
+            <th>Property</th>
+            <th>Price</th>
+            <th>Payment</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="bookingsBody">
+          <!-- Bookings will load here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function loadBookings() {
+      const res = await fetch('/api/bookings');
+      const bookings = await res.json();
+      const tbody = document.getElementById('bookingsBody');
+      
+      if (bookings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem;">No bookings yet</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = bookings.map(b => `
+        <tr>
+          <td>${new Date(b.created_at).toLocaleDateString()}</td>
+          <td><strong>${b.student_name}</strong></td>
+          <td>
+            <i class="fas fa-envelope"></i> ${b.student_email}<br>
+            <i class="fas fa-phone"></i> ${b.student_phone}
+          </td>
+          <td>
+            <strong>${b.property_title}</strong><br>
+            <small>${b.location}</small>
+          </td>
+          <td>MWK ${b.price.toLocaleString()}</td>
+          <td><span class="payment-badge ${b.payment_method}">${b.payment_method}</span></td>
+          <td><span class="status-badge ${b.status}">${b.status}</span></td>
+          <td>
+            <button onclick="contactStudent('${b.student_email}', '${b.student_phone}')" class="action-btn contact">
+              <i class="fas fa-comment-dots"></i> Contact
+            </button>
+            ${b.status === 'pending' ? `
+              <button onclick="confirmBooking(${b.id})" class="action-btn confirm">
+                <i class="fas fa-check-circle"></i> Confirm
+              </button>
+            ` : `
+              <span style="color: #00ff88;">✓ Confirmed</span>
+            `}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function contactStudent(email, phone) {
+      navigator.clipboard.writeText(`${email}, ${phone}`);
+      alert(`✅ Copied to clipboard:\n\n${email}\n${phone}`);
+    }
+
+    async function confirmBooking(bookingId) {
+      if (!confirm('⚠️ CONFIRM BOOKING?\n\n✅ This will:\n• Mark booking as PAID\n• Remove property from public listings\n• Secure booking fee\n\n❌ This cannot be undone!')) return;
+      
+      const res = await fetch(`/api/bookings/${bookingId}/confirm`, { method: 'POST' });
+      
+      if (res.ok) {
+        alert('✅ BOOKING CONFIRMED!\n\nProperty has been removed from listings.');
+        loadBookings();
+      } else {
+        alert('❌ Error confirming booking');
+      }
+    }
+
+    loadBookings();
+  </script>
+</body>
+</html>

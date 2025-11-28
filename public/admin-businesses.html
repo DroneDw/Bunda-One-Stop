@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Businesses - CampusStay</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
+  <style>
+    /* Password Protection Styles */
+    .login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-box {
+      background: #1a1a1a;
+      padding: 3rem;
+      border-radius: 15px;
+      border: 2px solid #00ff88;
+      box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+      text-align: center;
+      min-width: 350px;
+      max-width: 90%;
+    }
+
+    .login-box h2 {
+      color: #00ff88;
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
+    }
+
+    .login-box p {
+      color: #ccc;
+      margin-bottom: 2rem;
+    }
+
+    .login-box input {
+      width: 100%;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid #333;
+      background: #0a0a0a;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .login-box input:focus {
+      outline: none;
+      border-color: #00ff88;
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+    }
+
+    .login-box button {
+      width: 100%;
+      padding: 1rem;
+      background: #00ff88;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .login-box button:hover {
+      transform: scale(1.05);
+    }
+
+    .login-box button:active {
+      transform: scale(0.98);
+    }
+
+    #errorMsg {
+      color: #ff4444;
+      margin-top: 1rem;
+      font-weight: 600;
+      display: none;
+    }
+
+    /* Hide admin content initially */
+    #adminContent {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- PASSWORD LOGIN OVERLAY -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-box">
+      <i class="fas fa-lock" style="font-size: 3rem; color: #00ff88; margin-bottom: 1rem;"></i>
+      <h2>Admin Access</h2>
+      <p>Enter password to manage businesses</p>
+      <input type="password" id="adminPassword" placeholder="Enter password" autofocus>
+      <button onclick="checkPassword()">
+        <i class="fas fa-sign-in-alt"></i> Login
+      </button>
+      <p id="errorMsg">❌ Incorrect password!</p>
+    </div>
+  </div>
+
+  <!-- ADMIN CONTENT (Hidden until password is entered) -->
+  <div id="adminContent">
+    <nav class="navbar admin-nav">
+      <div class="nav-container">
+        <div class="logo">
+            <i class="fas fa-store"></i>
+            <span>Bunda One Stop</span>
+        </div>
+        <div class="admin-links">
+          <a href="businesses-register.html"><i class="fas fa-plus-circle"></i> Register Business</a>
+          <a href="add-service.html"><i class="fas fa-plus-square"></i> Add Service</a>
+          <a href="admin.html"><i class="fas fa-plus-circle"></i> Add property</a>
+          <a href="admin-bookings.html"><i class="fas fa-clipboard-list"></i> Bookings</a>
+
+
+          <a href="marketplace.html"><i class="fas fa-arrow-left"></i> Back</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="admin-container">
+      <h2><i class="fas fa-store"></i> Business Applications</h2>
+      <div id="businessApplications" class="admin-properties"></div>
+    </div>
+  </div>
+
+  <script>
+    // === PASSWORD PROTECTION ===
+    // CHANGE THIS PASSWORD TO SOMETHING SECURE!
+    const MASTER_PASSWORD = 'admin123';
+
+    function checkPassword() {
+      const input = document.getElementById('adminPassword').value;
+      if (input === MASTER_PASSWORD) {
+        // Hide login, show admin content
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('adminContent').style.display = 'block';
+        
+        // Load businesses after successful login
+        loadBusinesses();
+      } else {
+        // Show error message
+        document.getElementById('errorMsg').style.display = 'block';
+        document.getElementById('adminPassword').value = '';
+        document.getElementById('adminPassword').focus();
+      }
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        checkPassword();
+      }
+    });
+
+    // === BUSINESS MANAGEMENT FUNCTIONS ===
+    async function loadBusinesses() {
+      const res = await fetch('/api/businesses/admin');
+      const businesses = await res.json();
+      const container = document.getElementById('businessApplications');
+      
+      container.innerHTML = businesses.map(b => `
+        <div class="business-card">
+          <img src="/uploads/${b.logo}" alt="${b.name}" class="business-logo">
+          
+          <!-- Password input -->
+          <input type="text" placeholder="Set Password" id="pwd-${b.id}" style="width: 120px; padding: 0.5rem;">
+          <button onclick="setPassword(${b.id})" class="action-btn">Set</button>
+          
+          <div class="details">
+            <h3>${b.name}</h3>
+            <p class="category">${b.category}</p>
+            <p>${b.description}</p>
+            <p><i class="fas fa-phone"></i> ${b.contact_phone}</p>
+            <p><i class="fas fa-envelope"></i> ${b.contact_email}</p>
+            <p><i class="fas fa-map-marker"></i> ${b.location}</p>
+            <p><strong>${b.services_count || 0} services</strong></p>
+          </div>
+          
+          <div class="status-badge ${b.approved ? 'approved' : 'pending'}">
+            ${b.approved ? '✅ Approved' : '⏳ Pending'}
+          </div>
+          
+          <div class="actions">
+            ${!b.approved ? `
+              <button onclick="approveBusiness(${b.id})" class="action-btn confirm">
+                <i class="fas fa-check"></i> Approve
+              </button>
+            ` : `
+              <span style="color: #00ff88;">Live</span>
+            `}
+            <a href="add-service.html?business_id=${b.id}" class="action-btn" style="background: #2563eb; color: #fff; text-decoration: none; padding: 0.5rem 1rem; border-radius: 5px; font-size: 0.85rem;">
+              <i class="fas fa-plus"></i> Add Service
+            </a>
+            <button onclick="deleteBusiness(${b.id})" class="action-btn delete">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+  
+    async function approveBusiness(id) {
+      if (!confirm('Approve this business? It will appear in marketplace.')) return;
+      const res = await fetch(`/api/businesses/${id}/approve`, { method: 'POST' });
+      if (res.ok) {
+        alert('✅ Business approved and now live!');
+        loadBusinesses();
+      } else {
+        alert('❌ Approval failed');
+      }
+    }
+  
+    async function deleteBusiness(id) {
+      if (!confirm('Delete this business? This cannot be undone.')) return;
+      const res = await fetch(`/api/businesses/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        alert('Business deleted');
+        loadBusinesses();
+      }
+    }
+
+    // ✅ FIXED: Changed b.id to id
+    async function setPassword(id) {
+      const password = document.getElementById(`pwd-${id}`).value;
+      if (!password) return alert('Enter password');
+      
+      // ⚠️ WARNING: Backend route /api/businesses/:id/password doesn't exist in server.js
+      // You need to add this route to handle password setting
+      const res = await fetch(`/api/businesses/${id}/password`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      
+      if (res.ok) {
+        alert('✅ Password set!');
+        document.getElementById(`pwd-${id}`).value = '';
+      } else {
+        alert('❌ Failed to set password - Backend route not found');
+      }
+    }
+  </script>
+</body>
+</html>

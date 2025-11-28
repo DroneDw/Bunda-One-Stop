@@ -1,0 +1,104 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusStay - Off-Campus Accommodation</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+        <div class="logo">
+            <i class="fas fa-store"></i>
+            <span>Bunda One Stop</span>
+          </div>
+      <ul class="nav-menu">
+        <li><a href="index.html"><i class="fas fa-home"></i> Accommodation</a></li>
+        <li><a href="marketplace.html"><i class="fas fa-shopping-bag"></i> Marketplace</a></li>
+        <li><a href="admin-businesses.html"><i class="fas fa-cog"></i> Admin</a></li>
+      </ul>
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section id="home" class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <h1>Find Your Perfect Off-Campus Home</h1>
+      <p>Connecting students with safe, affordable accommodation near campus</p>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search by location, price...">
+        <button onclick="searchProperties()"><i class="fas fa-search"></i> Search</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Stats -->
+  <section class="stats">
+    <div class="stat-card">
+      <i class="fas fa-home"></i>
+      <h3 id="totalProperties">0</h3>
+      <p>Available Rooms</p>
+    </div>
+    <div class="stat-card">
+      <i class="fas fa-users"></i>
+      <h3>500+</h3>
+      <p>Students Helped</p>
+    </div>
+    <div class="stat-card">
+      <i class="fas fa-map-marker-alt"></i>
+      <h3>10km</h3>
+      <p>Max Distance</p>
+    </div>
+  </section>
+
+  <!-- Property Listings -->
+  <section id="listings" class="listings">
+    <div class="container">
+      <h2>Available Accommodations</h2>
+      <div class="filter-bar">
+        <select id="priceFilter">
+          <option value="">All Prices</option>
+          <option value="0-50000">MWK 0 - 50,000</option>
+          <option value="50000-100000">MWK 50,000 - 100,000</option>
+          <option value="100000+">MWK 100,000+</option>
+        </select>
+        <select id="distanceFilter">
+          <option value="">All Distances</option>
+          <option value="0-2">0 - 2km</option>
+          <option value="2-5">2 - 5km</option>
+          <option value="5+">5km+</option>
+        </select>
+        <button onclick="applyFilters()"><i class="fas fa-filter"></i> Apply</button>
+      </div>
+      <div id="propertiesGrid" class="properties-grid">
+        <!-- Properties will be loaded here -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Property Detail Modal -->
+  <div id="propertyModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2024 CampusStay. Designed for Students, By Students.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

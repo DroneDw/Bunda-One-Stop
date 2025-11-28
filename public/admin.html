@@ -1,0 +1,94 @@
+<!-- public/admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - CampusStay</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar admin-nav">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-store"></i>
+                <span>Bunda One Stop</span>
+            </div>
+          <div class="admin-links">
+            <a href="admin.html" class="active"><i class="fas fa-plus-circle"></i> Add Property</a>
+            <a href="admin-bookings.html"><i class="fas fa-clipboard-list"></i> Bookings</a>
+            <a href="index.html"><i class="fas fa-arrow-left"></i> Back to Site</a>
+          </div>
+        </div>
+    </nav>
+
+  <div class="admin-container">
+    <h2><i class="fas fa-plus-circle"></i> Add New Property</h2>
+    <form id="addPropertyForm" class="admin-form" enctype="multipart/form-data">
+      <input type="text" name="title" placeholder="Property Title" required>
+      <textarea name="description" placeholder="Description (include conditions, rules, etc.)" rows="5" required></textarea>
+      <input type="number" name="price" placeholder="Price per month (MWK)" required>
+      <input type="text" name="location" placeholder="Exact Location" required>
+      <input type="number" step="0.1" name="distance" placeholder="Distance from campus (km)" required>
+      <input type="text" name="amenities" placeholder="Amenities (comma separated)">
+      <label for="images">Upload Room Images:</label>
+      <input type="file" name="images" multiple accept="image/*" required>
+      <button type="submit"><i class="fas fa-upload"></i> Upload Property</button>
+    </form>
+
+    <h2 style="margin-top: 40px;"><i class="fas fa-list"></i> Current Properties</h2>
+    <div id="adminProperties" class="admin-properties"></div>
+  </div>
+
+  <script>
+    // Admin functionality
+    document.getElementById('addPropertyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      
+      const res = await fetch('/api/properties', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (res.ok) {
+        alert('Property added successfully!');
+        e.target.reset();
+        loadAdminProperties();
+      } else {
+        alert('Error adding property');
+      }
+    });
+
+    async function loadAdminProperties() {
+      const res = await fetch('/api/properties');
+      const properties = await res.json();
+      const container = document.getElementById('adminProperties');
+      
+      container.innerHTML = properties.map(p => `
+        <div class="admin-property-card">
+          <img src="/uploads/${p.images.split(',')[0]}" alt="${p.title}">
+          <div class="details">
+            <h3>${p.title}</h3>
+            <p>MWK ${p.price.toLocaleString()}</p>
+            <p>${p.location} (${p.distance}km)</p>
+          </div>
+          <button onclick="deleteProperty(${p.id})" class="delete-btn">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function deleteProperty(id) {
+      if (confirm('Are you sure?')) {
+        await fetch(`/api/properties/${id}`, { method: 'DELETE' });
+        loadAdminProperties();
+      }
+    }
+
+    loadAdminProperties();
+  </script>
+</body>
+</html>

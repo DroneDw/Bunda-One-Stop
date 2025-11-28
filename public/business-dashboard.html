@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Business Portal</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <i class="fas fa-store"></i>
+        <span>Bunda One Stop</span>
+    </div>
+      <button onclick="logout()" style="background: #ff4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">
+        <i class="fas fa-sign-out"></i> Logout
+      </button>
+    </div>
+  </nav>
+
+  <div class="container" style="margin-top: 100px;">
+    <h1>Welcome, <span id="businessName">Loading...</span>!</h1>
+    
+    <div class="dashboard-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+      
+      <!-- Orders Section -->
+      <div class="dashboard-card">
+        <h2><i class="fas fa-shopping-cart"></i> Recent Orders</h2>
+        <div id="ordersList">
+          <i class="fas fa-spinner fa-spin" style="color: #00ff88;"></i> Loading orders...
+        </div>
+      </div>
+      <!-- Notifications Section -->
+      <div class="dashboard-card">
+        <h2><i class="fas fa-bell"></i> Recent Notifications</h2>
+        <div id="notificationsList" style="max-height: 400px; overflow-y: auto;">
+          <p style="color: #888;">Loading notifications...</p>
+        </div>
+      </div>
+      
+      <!-- My Services Section -->
+      <div class="dashboard-card">
+        <h2><i class="fas fa-concierge-bell"></i> My Services</h2>
+        <div id="servicesList">
+          <i class="fas fa-spinner fa-spin" style="color: #00ff88;"></i> Loading services...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check login
+    const businessId = localStorage.getItem('businessId');
+    if (!businessId) {
+      alert('Please login first');
+      window.location.href = 'business-portal-login.html';
+    }
+
+    // Load dashboard data
+    async function loadDashboard() {
+      try {
+        // ✅ FIXED: Use Promise.all for parallel requests
+        const [businessRes, ordersRes] = await Promise.all([
+          fetch(`/api/businesses/${businessId}`),
+          fetch(`/api/businesses/${businessId}/orders`)
+        ]);
+        
+        // Check responses
+        if (!businessRes.ok) throw new Error(`Business error: ${businessRes.status}`);
+        if (!ordersRes.ok) throw new Error(`Orders error: ${ordersRes.status}`);
+        
+        const businessData = await businessRes.json();
+        const orders = await ordersRes.json();
+        
+        // Display data
+        document.getElementById('businessName').textContent = businessData.business.name;
+        displayOrders(orders);
+        displayServices(businessData.services || []);
+        
+      } catch (error) {
+        console.error('❌ Load failed:', error);
+        document.getElementById('ordersList').innerHTML = `<p style="color: #ff4444;">❌ ${error.message}</p>`;
+        document.getElementById('servicesList').innerHTML = `<p style="color: #ff4444;">Failed to load services</p>`;
+      }
+    }
+
+    function displayOrders(orders) {
+      const container = document.getElementById('ordersList');
+      if (!orders || orders.length === 0) {
+        container.innerHTML = '<p style="color: #888;">No orders yet</p>';
+        return;
+      }
+      
+      container.innerHTML = orders.map(order => `
+        <div class="order-card" style="background: #1a1a1a; padding: 1rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid #333;">
+          <h4>${order.service_name || 'Service'}</h4>
+          <p><i class="fas fa-user"></i> ${order.student_name}</p>
+          <p><i class="fas fa-phone"></i> ${order.student_phone}</p>
+          <p><i class="fas fa-calendar"></i> ${order.booking_date} at ${order.booking_time}</p>
+          <p><strong>Status:</strong> <span class="status-badge ${order.status}">${order.status}</span></p>
+          ${order.status === 'booked' ? `
+            <button onclick="markDelivered(${order.id})" class="action-btn confirm" style="margin-top: 1rem;">
+              <i class="fas fa-check-circle"></i> Mark Delivered
+            </button>
+          ` : `<p style="color: #00ff88; margin-top: 1rem;">✓ Delivered</p>`}
+        </div>
+      `).join('');
+    }
+
+    function displayServices(services) {
+      const container = document.getElementById('servicesList');
+      if (!services || services.length === 0) {
+        container.innerHTML = '<p style="color: #888;">No services listed</p>';
+        return;
+      }
+      
+      container.innerHTML = services.map(service => `
+        <div class="service-mini-card" style="background: #0a0a0a; padding: 1rem; border-radius: 10px; margin-bottom: 0.5rem;">
+          <strong>${service.name}</strong>
+          <p style="color: #888; font-size: 0.9rem;">MWK ${Number(service.price).toLocaleString()}</p>
+        </div>
+      `).join('');
+    }
+
+    async function markDelivered(orderId) {
+      if (!confirm('Mark this order as delivered?')) return;
+      
+      const res = await fetch(`/api/business/order/${orderId}/deliver`, { method: 'POST' });
+      
+      if (res.ok) {
+        alert('✅ Order marked as delivered!');
+        loadDashboard(); // Refresh
+      } else {
+        alert('❌ Failed: ' + (await res.text()));
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('businessId');
+      window.location.href = 'marketplace.html';
+    }
+
+    // Load notifications
+    async function loadNotifications() {
+      try {
+        const res = await fetch(`/api/business/${businessId}/notifications`);
+        const notifications = await res.json();
+        
+        const container = document.getElementById('notificationsList');
+        if (notifications.length === 0) {
+          container.innerHTML = '<p style="color: #888;">No new notifications</p>';
+          return;
+        }
+        
+        container.innerHTML = notifications.map(n => `
+          <div class="notification-card" style="background: #0a0a0a; padding: 1rem; border-radius: 10px; margin-bottom: 0.5rem; border-left: 3px solid #00ff88;">
+            <p style="color: #00ff88; font-size: 0.85rem;">📅 ${n.created_at}</p>
+            <p><strong>${n.message}</strong></p>
+            <a href="${n.whatsapp_link}" target="_blank" style="color: #00ff88; font-size: 0.9rem;">💬 Reply on WhatsApp</a>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('❌ Notifications failed:', error);
+      }
+    }
+
+// Call this in loadDashboard()
+loadNotifications();
+
+    // Load dashboard on page load
+    loadDashboard();
+  </script>
+</body>
+</html>

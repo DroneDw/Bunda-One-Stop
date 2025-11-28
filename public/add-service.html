@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Service - CampusStay</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
+</head>
+<body>
+  <nav class="navbar admin-nav">
+    <div class="nav-container">
+        <div class="logo">
+            <i class="fas fa-store"></i>
+            <span>Bunda One Stop</span>
+        </div>
+      <div class="admin-links">
+        <a href="admin.html"><i class="fas fa-store"></i> Businesses</a>
+        <a href="admin-bookings.html"><i class="fas fa-clipboard-list"></i> Bookings</a>
+        <a href="marketplace.html"><i class="fas fa-arrow-left"></i> Back</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" style="max-width: 800px; margin: 100px auto 2rem; padding: 0 2rem;">
+    <h1><i class="fas fa-plus-circle"></i> Add New Service</h1>
+    <p class="subtitle">Add a service to your business</p>
+
+    <form id="serviceForm" class="admin-form" enctype="multipart/form-data">
+      <!-- Business Selection (for admin) -->
+      <div id="businessSelectContainer" style="margin-bottom: 1rem;">
+        <label for="business_id" style="display: block; margin-bottom: 0.5rem;">Select Business:</label>
+        <select name="business_id" id="business_id" style="width: 100%;">
+          <option value="">Loading businesses...</option>
+        </select>
+      </div>
+
+      <input type="text" name="name" placeholder="Service Name" required>
+      <textarea name="description" placeholder="Service Description" rows="4" required></textarea>
+      <input type="number" name="price" placeholder="Service Price (MWK)" step="0.01" required>
+      <input type="text" name="duration" placeholder="Duration (e.g., 1 hour, 30 mins)" required>
+      
+      <label for="images">Upload Service Images (hold Ctrl to select multiple):</label>
+      <input type="file" name="images" id="images" multiple accept="image/*" required>
+      <div id="imagePreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px;"></div>
+      
+      <button type="submit"><i class="fas fa-paper-plane"></i> Add Service</button>
+    </form>
+
+    <div id="successMessage" style="display: none; margin-top: 2rem; padding: 1.5rem; background: #00ff88; color: #000; border-radius: 10px; text-align: center;">
+      <h3>✅ Service Added Successfully!</h3>
+      <button id="addAnotherBtn" class="action-btn" style="background: #2563eb; color: #fff; margin-top: 1rem; margin-right: 0.5rem;">
+        <i class="fas fa-plus"></i> Add Another Service
+      </button>
+      <button onclick="window.location.href='marketplace.html'" class="action-btn" style="background: #333; color: #fff; margin-top: 1rem;">
+        <i class="fas fa-check"></i> Done
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Get business_id from URL parameter (when linked from admin)
+    const urlParams = new URLSearchParams(window.location.search);
+    const businessIdFromUrl = urlParams.get('business_id');
+
+    // Image preview before upload
+    document.getElementById('images').addEventListener('change', function(e) {
+      const preview = document.getElementById('imagePreview');
+      preview.innerHTML = '';
+      Array.from(e.target.files).forEach(file => {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.style.cssText = 'width: 100px; height: 100px; object-fit: cover; border-radius: 5px;';
+        preview.appendChild(img);
+      });
+    });
+
+    // Load businesses for admin dropdown
+    async function loadBusinessesForDropdown() {
+      try {
+        const res = await fetch('/api/businesses/admin');
+        const businesses = await res.json();
+        const select = document.getElementById('business_id');
+        
+        select.innerHTML = '<option value="">Select a Business</option>';
+        businesses.forEach(b => {
+          const option = document.createElement('option');
+          option.value = b.id;
+          option.textContent = `${b.name} (${b.category})`;
+          select.appendChild(option);
+        });
+
+        // Pre-select if business_id is in URL
+        if (businessIdFromUrl) {
+          select.value = businessIdFromUrl;
+        }
+      } catch (error) {
+        console.error('Failed to load businesses:', error);
+      }
+    }
+
+    // Always load businesses dropdown (visible for admin, hidden for business owners)
+    loadBusinessesForDropdown();
+
+    // Handle "Add Another Service" button
+    document.getElementById('addAnotherBtn').addEventListener('click', () => {
+      document.getElementById('serviceForm').style.display = 'block';
+      document.querySelector('h1').style.display = 'block';
+      document.querySelector('.subtitle').style.display = 'block';
+      document.getElementById('successMessage').style.display = 'none';
+      document.getElementById('serviceForm').reset();
+      document.getElementById('imagePreview').innerHTML = '';
+    });
+
+    // Form submission
+    document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData();
+      
+      // Get business_id from dropdown
+      const businessId = document.getElementById('business_id').value;
+      
+      if (!businessId) {
+        alert('❌ Please select a business');
+        return;
+      }
+      
+      formData.append('business_id', businessId);
+      formData.append('name', document.querySelector('[name="name"]').value);
+      formData.append('description', document.querySelector('[name="description"]').value);
+      formData.append('price', document.querySelector('[name="price"]').value);
+      formData.append('duration', document.querySelector('[name="duration"]').value);
+      
+      // Add images
+      const images = document.getElementById('images').files;
+      if (images.length === 0) {
+        alert('❌ Please select at least one image');
+        return;
+      }
+      for (let file of images) {
+        formData.append('images', file);
+      }
+      
+      try {
+        const res = await fetch('/api/services', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Service failed: ${res.status} - ${errorText}`);
+        }
+        
+        const service = await res.json();
+        console.log('✅ Service created:', service.id);
+        
+        // Show success message
+        document.getElementById('serviceForm').style.display = 'none';
+        document.querySelector('h1').style.display = 'none';
+        document.querySelector('.subtitle').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'block';
+        
+      } catch (error) {
+        console.error('❌ CATCH ERROR:', error);
+        alert('❌ Failed to add service: ' + error.message);
+      }
+    });
+
+    // Hide dropdown for business owners (future implementation)
+    // For now, all users see the dropdown. In production, add authentication check here.
+    // Example:
+    // const isAdmin = checkUserRole(); // Your auth function
+    // if (!isAdmin) {
+    //   document.getElementById('businessSelectContainer').style.display = 'none';
+    //   // Set business_id from user session instead
+    // }
+  </script>
+</body>
+</html>

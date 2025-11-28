@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Business - CampusStay</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+        <div class="logo">
+            <i class="fas fa-store"></i>
+            <span>Bunda One Stop</span>
+        </div>
+      <ul class="nav-menu">
+        <li><a href="index1.html"><i class="fas fa-home"></i> Accommodation</a></li>
+        <li><a href="marketplace.html"><i class="fas fa-shopping-bag"></i> Marketplace</a></li>
+        <li><a href="business-register.html" class="active"><i class="fas fa-store"></i> Register Business</a></li>
+        <li><a href="admin-bookings.html">bookings</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container" style="max-width: 800px; margin: 100px auto 2rem; padding: 0 2rem;">
+    <h1><i class="fas fa-store"></i> Register Your Business</h1>
+    <p class="subtitle">Reach thousands of students on CampusStay</p>
+
+    <form id="businessForm" class="admin-form" enctype="multipart/form-data">
+      <input type="text" name="name" placeholder="Business Name" required>
+      
+      <select name="category" required>
+        <option value="">Select Category</option>
+        <option value="food">Food & Delivery</option>
+        <option value="laundry">Laundry Services</option>
+        <option value="tutoring">Tutoring</option>
+        <option value="transport">Transport</option>
+        <option value="stationery">Stationery & Supplies</option>
+        <option value="tech">Tech & Repairs</option>
+        <option value="beauty">Beauty & Hair</option>
+        <option value="other">Other</option>
+      </select>
+      
+      <textarea name="description" placeholder="Describe your business..." rows="4" required></textarea>
+      
+      <input type="email" name="contact_email" placeholder="Business Email" required>
+      <input type="tel" name="contact_phone" placeholder="Business Phone" required>
+      <input type="text" name="location" placeholder="Business Location" required>
+      
+      <label for="logo">Upload Business Logo:</label>
+      <input type="file" name="logo" accept="image/*" required>
+
+      <button type="submit"><i class="fas fa-paper-plane"></i> Register Business</button>
+    </form>
+
+    <div id="successMessage" style="display: none; margin-top: 2rem; padding: 1.5rem; background: #00ff88; color: #000; border-radius: 10px; text-align: center;">
+      <h3>✅ Business Registered Successfully!</h3>
+      <p>Your business is pending approval.</p>
+      <button id="addServiceBtn" class="action-btn" style="background: #2563eb; color: #fff; margin-top: 1rem; margin-right: 0.5rem;">
+        <i class="fas fa-plus"></i> Add Your First Service
+      </button>
+      <button onclick="window.location.href='marketplace.html'" class="action-btn" style="background: #333; color: #fff; margin-top: 1rem;">
+        <i class="fas fa-check"></i> Done
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let newlyCreatedBusinessId = null;
+
+    document.getElementById('businessForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const businessFormData = new FormData();
+      businessFormData.append('name', document.querySelector('[name="name"]').value);
+      businessFormData.append('description', document.querySelector('[name="description"]').value);
+      businessFormData.append('category', document.querySelector('[name="category"]').value);
+      businessFormData.append('contact_email', document.querySelector('[name="contact_email"]').value);
+      businessFormData.append('contact_phone', document.querySelector('[name="contact_phone"]').value);
+      businessFormData.append('location', document.querySelector('[name="location"]').value);
+      
+      const logoFile = document.querySelector('[name="logo"]').files[0];
+      if (!logoFile) {
+        alert('❌ Please select a logo file');
+        return;
+      }
+      businessFormData.append('logo', logoFile);
+      
+      try {
+        const businessRes = await fetch('/api/businesses', {
+          method: 'POST',
+          body: businessFormData
+        });
+        
+        if (!businessRes.ok) {
+          const errorText = await businessRes.text();
+          throw new Error(`Business failed: ${businessRes.status} - ${errorText}`);
+        }
+        
+        const business = await businessRes.json();
+        console.log('✅ Business created:', business.id);
+        newlyCreatedBusinessId = business.id;
+        
+        // Show success message
+        document.getElementById('businessForm').style.display = 'none';
+        document.querySelector('h1').style.display = 'none';
+        document.querySelector('.subtitle').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'block';
+        
+      } catch (error) {
+        console.error('❌ CATCH ERROR:', error);
+        alert('❌ Registration failed: ' + error.message);
+      }
+    });
+
+    document.getElementById('addServiceBtn').addEventListener('click', () => {
+      if (newlyCreatedBusinessId) {
+        window.location.href = `add-service.html?business_id=${newlyCreatedBusinessId}`;
+      } else {
+        alert('❌ No business ID found. Please register your business first.');
+      }
+    });
+  </script>
+</body>
+</html>
