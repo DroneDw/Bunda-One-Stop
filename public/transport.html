@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Bus Transport</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { color: #2c3e50; margin-bottom: 30px; text-align: center; }
+        .trip-card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .trip-info h2 { color: #27ae60; margin-bottom: 10px; }
+        .trip-info p { color: #7f8c8d; margin: 5px 0; }
+        .price { font-size: 24px; font-weight: bold; color: #e74c3c; }
+        .book-btn { background: #3498db; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .book-btn:hover { background: #2980b9; }
+        .no-trips { text-align: center; padding: 50px; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+        <!-- ADD THIS NAVIGATION -->
+        <div style="background: #2c3e50; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <div style="max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="color: white; margin: 0;">🚌 Ndi2 Transport</h2>
+                <div>
+                    <a href="/index.html" style="color: white; text-decoration: none; margin-right: 20px;">🏘️ Home</a>
+                    <a href="/admin/login.html" style="color: white; text-decoration: none;">🔧 Admin</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- EXISTING CONTENT -->
+        <div class="container">
+            <h1>🚌 Available Bus Trips</h1>
+            <div id="tripList"></div>
+        </div>
+
+    <script>
+        async function loadTrips() {
+            // ✅ FIXED: Call the PUBLIC endpoint
+            const res = await fetch('/api/trips-public');
+            const trips = await res.json();
+            const list = document.getElementById('tripList');
+            
+            if (trips.length === 0) {
+                list.innerHTML = '<div class="no-trips">No trips available yet. Contact admin to add trips!</div>';
+                return;
+            }
+            
+            trips.forEach(trip => {
+                const card = document.createElement('div');
+                card.className = 'trip-card';
+                card.innerHTML = `
+                    <div class="trip-info">
+                        <h2>${trip.origin} → ${trip.destination}</h2>
+                        <p><strong>Bus:</strong> ${trip.bus_name}</p>
+                        <p><strong>Date:</strong> ${new Date(trip.departure_date).toLocaleDateString()}</p>
+                        <p><strong>Time:</strong> ${trip.departure_time}</p>
+                    </div>
+                    <div>
+                        <div class="price">MWK ${trip.price}</div>
+                        <button class="book-btn" onclick="bookTrip(${trip.id})">Select Seat</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+        
+        function bookTrip(tripId) {
+            window.location.href = `/transport-book.html?trip=${tripId}`;
+        }
+        
+        loadTrips();
+    </script>
+</body>
+</html>

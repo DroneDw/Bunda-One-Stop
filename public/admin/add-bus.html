@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Bus Layout</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #34495e; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; }
+        button { background: #27ae60; color: white; padding: 12px 30px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: 600; }
+        button:hover { background: #229954; }
+        .preview { margin-top: 30px; padding: 20px; background: #ecf0f1; border-radius: 5px; }
+        .seat-grid { display: grid; gap: 10px; margin-top: 20px; }
+        .seat { width: 50px; height: 50px; background: #27ae60; color: white; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-weight: bold; }
+        .walkway { width: 30px; }
+    </style>
+    <script>
+        // Check authentication before page loads
+        (async function() {
+            try {
+                const res = await fetch('/api/agent/me', { credentials: 'include' });
+                if (res.status === 401) {
+                    window.location.href = '/admin/login.html';
+                    return;
+                }
+                const agent = await res.json();
+                window.currentAgent = agent;
+            } catch (err) {
+                window.location.href = '/admin/login.html';
+            }
+        })();
+    </script>
+</head>
+<body>
+        <div style="background: #2c3e50; padding: 15px;">
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <a href="/admin/transport-dashboard.html" style="color: white; text-decoration: none; padding: 10px 20px; background: rgba(255,255,255,0.2); border-radius: 5px;">← Back to Dashboard</a>
+            </div>
+        </div>
+        <div class="container">
+        <h1>🚌 Add New Bus Layout</h1>
+        <form id="busForm">
+            <div class="form-group">
+                <label>Bus Name:</label>
+                <input type="text" id="busName" required placeholder="e.g., Taqwa Bus A">
+            </div>
+            <div class="form-group">
+                <label>Number of Rows (Length):</label>
+                <input type="number" id="rows" min="1" max="20" required placeholder="e.g., 10">
+            </div>
+            <div class="form-group">
+                <label>Number of Columns (Width):</label>
+                <input type="number" id="columns" min="2" max="6" required placeholder="e.g., 4">
+            </div>
+            <div class="form-group">
+                <label>Walkway Position (after which seat?):</label>
+                <select id="walkwayPosition">
+                    <option value="2">After 2 seats (standard bus)</option>
+                    <option value="1">After 1 seat (small coaster)</option>
+                    <option value="3">After 3 seats (luxury layout)</option>
+                </select>
+            </div>
+            <button type="submit">Create Bus Layout</button>
+        </form>
+
+        <div class="preview">
+            <h3>Live Preview:</h3>
+            <div id="seatPreview"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('busForm');
+        const preview = document.getElementById('seatPreview');
+        
+        ['rows', 'columns', 'walkwayPosition'].forEach(id => {
+            document.getElementById(id).addEventListener('input', generatePreview);
+        });
+
+        function generatePreview() {
+            const rows = parseInt(document.getElementById('rows').value) || 0;
+            const cols = parseInt(document.getElementById('columns').value) || 0;
+            const walkway = parseInt(document.getElementById('walkwayPosition').value) || 2;
+            
+            if (rows < 1 || cols < 2) return;
+            
+            let html = `<div class="seat-grid" style="grid-template-columns: repeat(${cols + (cols > walkway ? 1 : 0)}, auto);">`;
+            let seatNumber = 1;
+            
+            for (let r = 0; r < rows; r++) {
+                for (let c = 1; c <= cols; c++) {
+                    html += `<div class="seat">${seatNumber}</div>`;
+                    if (c === walkway) {
+                        html += `<div class="walkway"></div>`;
+                    }
+                    seatNumber++;
+                }
+            }
+            html += '</div>';
+            preview.innerHTML = html;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('busName').value,
+                rows: parseInt(document.getElementById('rows').value),
+                columns: parseInt(document.getElementById('columns').value),
+                walkway_position: parseInt(document.getElementById('walkwayPosition').value)
+            };
+            
+            try {
+                const res = await fetch('/api/admin/add-bus', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data),
+                    credentials: 'include'
+                });
+                
+                const result = await res.json();
+                if (result.success) {
+                    alert('✅ Bus layout created! Bus ID: ' + result.busId);
+                    form.reset();
+                    preview.innerHTML = '';
+                } else {
+                    alert('❌ Error: ' + result.error);
+                }
+            } catch (err) {
+                alert('❌ Network error: ' + err.message);
+            }
+        });
+
+        function addLogoutButton() {
+            const header = document.querySelector('.header');
+            if (header && !document.getElementById('logoutBtn')) {
+                const logoutDiv = document.createElement('div');
+                logoutDiv.style.float = 'right';
+                logoutDiv.style.marginTop = '-50px';
+                logoutDiv.innerHTML = `
+                    <span style="color: white; margin-right: 15px;">👤 ${window.currentAgent?.name || 'Agent'}</span>
+                    <button id="logoutBtn" onclick="logout()" style="background: #e74c3c; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;">Logout</button>
+                `;
+                header.appendChild(logoutDiv);
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                fetch('/api/agent/logout', { 
+                    method: 'POST',
+                    credentials: 'include'
+                })
+                    .then(() => {
+                        window.location.href = '../admin/transport.html';
+                    });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', addLogoutButton);       
+        
+    </script>
+</body>
+</html>

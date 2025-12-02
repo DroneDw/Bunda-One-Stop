@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚌 Premium Bus Booking - Social Edition</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; padding: 20px; }
+        
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        
+        .header { background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 20px; text-align: center; }
+        .trip-info { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; margin-top: 15px; }
+        .info-item { text-align: center; }
+        .info-label { font-size: 12px; opacity: 0.8; }
+        .info-value { font-size: 18px; font-weight: bold; }
+        
+        .main-content { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; padding: 30px; }
+        
+        /* REALISTIC BUS */
+        .bus-visualization { background: linear-gradient(145deg, #e0e0e0, #f5f5f5); border-radius: 15px; padding: 30px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
+        .bus-exterior { background: linear-gradient(90deg, #c0392b, #e74c3c, #c0392b); padding: 10px; border-radius: 10px 10px 0 0; }
+        .bus-windows { display: flex; justify-content: space-around; }
+        .window { width: 40px; height: 20px; background: #3498db; border-radius: 5px; opacity: 0.7; }
+        .bus-interior { background: #2c3e50; padding: 20px; border-radius: 0 0 10px 10px; box-shadow: inset 0 5px 15px rgba(0,0,0,0.5); }
+        
+        .driver-cabin { background: #34495e; padding: 15px; border-radius: 10px; margin-bottom: 30px; text-align: center; color: white; font-size: 14px; }
+        .steering-wheel { font-size: 24px; margin-right: 10px; }
+        
+        /* COUPLES MODE TOGGLE */
+        .couples-toggle { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .couples-toggle:hover { transform: translateY(-2px); }
+        .couples-toggle.active { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .couples-toggle .icon { font-size: 24px; margin-right: 10px; }
+        
+        /* SEAT DESIGN WITH NAMES */
+        .seat-map-container { display: flex; gap: 20px; justify-content: center; }
+        .seat-column { display: flex; flex-direction: column; gap: 12px; }
+        
+        .seat {
+            width: 75px;
+            height: 75px;
+            background: linear-gradient(145deg, #34495e, #2c3e50);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            border: 2px solid transparent;
+        }
+        
+        .seat-number {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+        
+        .seat-name {
+            font-size: 9px;
+            text-align: center;
+            line-height: 1;
+            opacity: 0.9;
+            padding: 0 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 65px;
+        }
+        
+        /* SEATBELT ICON */
+        .seat-belt {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 12px;
+            color: #f1c40f;
+        }
+        
+        .seat.available:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+            background: linear-gradient(145deg, #27ae60, #229954);
+        }
+        
+        .seat.selected {
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 12px rgba(243, 156, 18, 0.5);
+            border-color: #fff;
+        }
+        
+        .seat.booked {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            cursor: not-allowed;
+            opacity: 0.85;
+        }
+        
+        .seat.couples-highlight {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+            50% { box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6); }
+            100% { box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        }
+        
+        .walkway {
+            width: 60px;
+            background: repeating-linear-gradient(90deg, #7f8c8d, #7f8c8d 10px, #95a5a6 10px, #95a5a6 20px);
+            border-radius: 5px;
+            opacity: 0.5;
+        }
+        
+        .booking-panel { background: linear-gradient(145deg, #f8f9fa, #e9ecef); border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .seat-indicator { text-align: center; padding: 20px; background: #3498db; color: white; border-radius: 10px; margin-bottom: 20px; font-size: 20px; font-weight: bold; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50; font-size: 14px; }
+        .form-group input { width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
+        
+        .book-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #27ae60, #229954); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .book-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4); }
+        .book-btn:disabled { background: #95a5a6; }
+        
+        @media (max-width: 768px) {
+            .main-content { grid-template-columns: 1fr; }
+            .seat { width: 65px; height: 65px; }
+            .seat-number { font-size: 16px; }
+            .seat-name { font-size: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚌 Premium Bus Booking - Social Edition</h1>
+            <div class="trip-info" id="tripDetails"></div>
+        </div>
+        
+        <div class="main-content">
+            <div class="bus-visualization">
+                <div class="bus-exterior">
+                    <div class="bus-windows">
+                        <div class="window"></div><div class="window"></div><div class="window"></div>
+                        <div class="window"></div><div class="window"></div><div class="window"></div>
+                    </div>
+                </div>
+                
+                <div class="bus-interior">
+                    <div class="driver-cabin">
+                        <span class="steering-wheel">🎮</span> DRIVER'S CABIN
+                    </div>
+                    
+                    <div class="couples-toggle" id="couplesToggle" onclick="toggleCouplesMode()">
+                        <span class="icon">💕</span>
+                        <strong>COUPLES MODE: OFF</strong><br>
+                        <small style="opacity: 0.8;">Click to book 2 adjacent seats together</small>
+                    </div>
+                    
+                    <div id="seatMap"></div>
+                </div>
+            </div>
+            
+            <div class="booking-panel">
+                <div class="seat-indicator" id="selectedSeatDisplay">
+                    🪑 Select Your Seat Below
+                </div>
+                
+                <form id="bookingForm">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="studentName" placeholder="Your full name" required>
+                    </div>
+                    <div id="couplesSecondPerson" style="display: none;">
+                        <div class="form-group">
+                            <label>Partner's Name</label>
+                            <input type="text" id="partnerName" placeholder="Partner's full name">
+                        </div>
+                        <div class="form-group">
+                            <label>Partner's Phone</label>
+                            <input type="tel" id="partnerPhone" placeholder="Partner's phone">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="studentPhone" placeholder="Your phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email (optional)</label>
+                        <input type="email" id="studentEmail" placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Booking Fee (20%)</label>
+                        <input type="text" id="bookingFee" readonly style="background: #ecf0f1;">
+                    </div>
+                    <button type="submit" class="book-btn" id="submitBtn" disabled>
+                        🎫 Book Selected Seat(s)
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const tripId = urlParams.get('trip');
+        let selectedSeat = null;
+        let selectedSeatPair = null;
+        let tripData = null;
+        let couplesMode = false;
+
+        async function loadTrip() {
+            try {
+                const tripRes = await fetch(`/api/trip/${tripId}/details`);
+                tripData = await tripRes.json();
+                if (!tripData) throw new Error('Trip not found');
+                
+                document.getElementById('tripDetails').innerHTML = `
+                    <div class="info-item"><div class="info-label">ROUTE</div><div class="info-value">${tripData.origin} → ${tripData.destination}</div></div>
+                    <div class="info-item"><div class="info-label">BUS</div><div class="info-value">${tripData.bus_name}</div></div>
+                    <div class="info-item"><div class="info-label">DATE</div><div class="info-value">${new Date(tripData.departure_date).toLocaleDateString()}</div></div>
+                    <div class="info-item"><div class="info-label">PRICE</div><div class="info-value">MWK ${tripData.price.toLocaleString()}</div></div>
+                `;
+                
+                document.getElementById('bookingFee').value = `MWK ${(tripData.price * 0.2).toLocaleString()}`;
+                
+                loadSeatMap();
+            } catch (err) {
+                alert('❌ Error loading trip: ' + err.message);
+            }
+        }
+
+
+        async function loadSeatMap() {
+            const res = await fetch(`/api/trip/${tripId}/seats`);
+            if (!res.ok) {
+                console.error('❌ Failed to load seats:', res.status);
+                return alert('Error loading seat map');
+            }
+            const data = await res.json();
+            
+            if (data.error) {
+                console.error('❌ API Error:', data.error);
+                return alert(data.error);
+            }
+            
+            const { busInfo, bookedSeats } = data;
+            
+            // Fetch bookings for student names
+            const bookingsRes = await fetch(`/api/admin/trip/${tripId}/bookings`);
+            const bookings = await bookingsRes.json();
+            
+            const bookingNames = {};
+            (bookings || []).forEach(b => {
+                if (b.status === 'booked' || b.status === 'pending') {
+                    bookingNames[b.seat_number] = b.student_name;
+                }
+            });
+            
+            // ✅ FIX: Generate seat map HTML
+            let html = '<div class="seat-map-container">';
+            
+            for (let col = 1; col <= busInfo.columns; col++) {
+                // Add walkway in the middle
+                if (col === busInfo.walkway_position + 1) {
+                    html += '<div class="walkway"></div>';
+                }
+                
+                html += '<div class="seat-column">';
+                let seatNumber = col;
+                
+                for (let row = 0; row < busInfo.rows; row++) {
+                    const isBooked = bookedSeats[seatNumber];
+                    const statusClass = isBooked ? 'booked' : 'available';
+                    const studentName = bookingNames[seatNumber];
+                    
+                    html += `<div class="seat ${statusClass}" data-seat="${seatNumber}">`;
+                    html += `<div class="seat-number">${seatNumber}</div>`;
+                    
+                    if (studentName) {
+                        html += `<div class="seat-name">${studentName}</div>`;
+                        html += `<div class="seat-belt">🔒</div>`;
+                    } else if (isBooked) {
+                        html += `<div class="seat-belt">🔒</div>`;
+                    }
+                    
+                    html += '</div>';
+                    seatNumber += busInfo.columns;
+                }
+                
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            
+            // ✅ FIX: Actually render the HTML
+            document.getElementById('seatMap').innerHTML = html;
+            
+            // ✅ FIX: Add click event listeners
+            document.querySelectorAll('.seat.available').forEach(seat => {
+                seat.addEventListener('click', () => selectSeat(seat.dataset.seat));
+            });
+            
+            // ✅ FIX: Apply couples mode highlights if active
+            if (couplesMode) {
+                highlightCouplesSeats();
+            }
+        }
+
+        function toggleCouplesMode() {
+            couplesMode = !couplesMode;
+            const toggle = document.getElementById('couplesToggle');
+            const secondPersonForm = document.getElementById('couplesSecondPerson');
+            
+            if (couplesMode) {
+                toggle.classList.add('active');
+                toggle.innerHTML = `
+                    <span class="icon">💕</span>
+                    <strong>COUPLES MODE: ON</strong><br>
+                    <small style="opacity: 0.8;">Click any seat to see adjacent pairs</small>
+                `;
+                secondPersonForm.style.display = 'block';
+                highlightCouplesSeats();
+            } else {
+                toggle.classList.remove('active');
+                toggle.innerHTML = `
+                    <span class="icon">💕</span>
+                    <strong>COUPLES MODE: OFF</strong><br>
+                    <small style="opacity: 0.8;">Click to book 2 adjacent seats</small>
+                `;
+                secondPersonForm.style.display = 'none';
+                clearCouplesHighlight();
+            }
+        }
+
+        function highlightCouplesSeats() {
+            clearCouplesHighlight();
+            document.querySelectorAll('.seat.available').forEach(seat => {
+                const seatNum = parseInt(seat.dataset.seat);
+                const adjacentSeat = findAdjacentSeat(seatNum);
+                if (adjacentSeat) {
+                    seat.classList.add('couples-highlight');
+                }
+            });
+        }
+
+        function clearCouplesHighlight() {
+            document.querySelectorAll('.seat.couples-highlight').forEach(seat => {
+                seat.classList.remove('couples-highlight');
+            });
+        }
+
+        function findAdjacentSeat(seatNumber) {
+            const res = document.querySelector(`[data-seat="${seatNumber}"]`).closest('.bus-interior');
+            const totalSeats = res.querySelectorAll('.seat').length;
+            
+            // Check seats to the right (same row)
+            const rightSeat = seatNumber + 1;
+            const seatEl = document.querySelector(`[data-seat="${rightSeat}"]`);
+            if (seatEl && seatEl.classList.contains('available')) {
+                return rightSeat;
+            }
+            
+            // Check seat to the left (if this is the right seat)
+            const leftSeat = seatNumber - 1;
+            const leftEl = document.querySelector(`[data-seat="${leftSeat}"]`);
+            if (leftEl && leftEl.classList.contains('available')) {
+                return leftSeat;
+            }
+            
+            return null;
+        }
+
+        function selectSeat(seatNum) {
+            if (couplesMode) {
+                const adjacent = findAdjacentSeat(parseInt(seatNum));
+                if (adjacent) {
+                    // Select both seats
+                    document.querySelectorAll('.seat.selected').forEach(s => s.classList.remove('selected'));
+                    document.querySelector(`[data-seat="${seatNum}"]`).classList.add('selected');
+                    document.querySelector(`[data-seat="${adjacent}"]`).classList.add('selected');
+                    selectedSeat = seatNum;
+                    selectedSeatPair = adjacent;
+                    
+                    document.getElementById('selectedSeatDisplay').innerHTML = `
+                        💕 Couples Seats <span style="font-size: 28px;">#${seatNum} & #${adjacent}</span>
+                    `;
+                } else {
+                    alert('❌ No adjacent seat available for couples!');
+                    return;
+                }
+            } else {
+                document.querySelectorAll('.seat.selected').forEach(s => s.classList.remove('selected'));
+                document.querySelector(`[data-seat="${seatNum}"]`).classList.add('selected');
+                selectedSeat = seatNum;
+                selectedSeatPair = null;
+                
+                document.getElementById('selectedSeatDisplay').innerHTML = `
+                    🪑 Seat <span style="font-size: 32px;">#${seatNum}</span> Selected
+                `;
+            }
+            
+            document.getElementById('submitBtn').disabled = false;
+        }
+
+        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!selectedSeat) return alert('Please select a seat!');
+            
+            const bookingData = {
+                tripId: tripId,
+                seatNumber: selectedSeat,
+                studentName: document.getElementById('studentName').value,
+                studentPhone: document.getElementById('studentPhone').value,
+                studentEmail: document.getElementById('studentEmail').value
+            };
+            
+            if (couplesMode && selectedSeatPair) {
+                if (!document.getElementById('partnerName').value || !document.getElementById('partnerPhone').value) {
+                    return alert('Please enter partner details for couples booking!');
+                }
+                
+                // Book first seat
+                const res1 = await fetch('/api/book-seat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(bookingData)
+                });
+                
+                const result1 = await res1.json();
+                
+                if (result1.success) {
+                    // Book adjacent seat for partner
+                    const partnerData = {
+                        tripId: tripId,
+                        seatNumber: selectedSeatPair,
+                        studentName: document.getElementById('partnerName').value,
+                        studentPhone: document.getElementById('partnerPhone').value,
+                        studentEmail: document.getElementById('studentEmail').value
+                    };
+                    
+                    const res2 = await fetch('/api/book-seat', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(partnerData)
+                    });
+                    
+                    const result2 = await res2.json();
+                    
+                    if (result2.success) {
+                        alert(`✅ COUPLES BOOKING SUCCESSFUL!\n\nSeats #${selectedSeat} & #${selectedSeatPair}\nBooking IDs: ${result1.bookingId}, ${result2.bookingId}\n\nTotal Fee: MWK ${(tripData.price * 0.4).toLocaleString()}`);
+                        loadSeatMap();
+                    } else {
+                        alert('❌ Error booking partner seat: ' + result2.error);
+                    }
+                } else {
+                    alert('❌ Error: ' + result1.error);
+                }
+            } else {
+                // Single booking
+                const res = await fetch('/api/book-seat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(bookingData)
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    alert(`✅ SUCCESS!\n\nSeat #${selectedSeat} is reserved!\nBooking ID: ${result.bookingId}\n\nPay MWK ${(tripData.price * 0.2).toLocaleString()} to confirm.`);
+                    loadSeatMap();
+                } else {
+                    alert('❌ ' + result.error);
+                }
+            }
+        });
+
+        loadTrip();
+    </script>
+</body>
+</html>

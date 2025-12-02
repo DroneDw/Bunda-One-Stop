@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Login - Ndi2 Transport</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 400px; }
+        .login-header { text-align: center; margin-bottom: 30px; }
+        .bus-icon { font-size: 48px; margin-bottom: 10px; }
+        h1 { color: #2c3e50; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #34495e; }
+        input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; }
+        input:focus { border-color: #3498db; outline: none; }
+        .login-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #27ae60, #229954); color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .login-btn:hover { transform: translateY(-2px); }
+        .error-msg { background: #e74c3c; color: white; padding: 10px; border-radius: 5px; margin-bottom: 15px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="bus-icon">🚌</div>
+            <h1>Agent Login</h1>
+            <p style="color: #7f8c8d;">Manage your buses & bookings</p>
+        </div>
+        
+        <div class="error-msg" id="errorMsg"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" required placeholder="agent@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" required placeholder="Enter your password">
+            </div>
+            <button type="submit" class="login-btn">Login</button>
+        </form>
+        
+        <p style="margin-top: 20px; text-align: center; color: #7f8c8d;">
+            Don't have an account? <a href="#" style="color: #3498db;">Contact Admin</a>
+        </p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            document.getElementById('errorMsg').style.display = 'none';
+            
+            try {
+                const res = await fetch('/api/agent/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    window.location.href = '/admin/transport-dashboard.html';
+                } else {
+                    document.getElementById('errorMsg').textContent = result.error;
+                    document.getElementById('errorMsg').style.display = 'block';
+                }
+            } catch (err) {
+                alert('❌ Network error: ' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>

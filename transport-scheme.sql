@@ -1,0 +1,1 @@
+sqlite3 accommodation.db < transport-schema.sql
